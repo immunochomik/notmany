@@ -1,12 +1,32 @@
-from .base import StoreBase, BucketBase
 
 import os
+from tempfile import gettempdir
+
+from .base import StoreBase, BucketBase, StoreSetupError
+
+
+DEFAULT_DIR_NAME = 'notmany_store'
 
 
 class Store(StoreBase):
 
-    def __init__(self, directory):
+    def __init__(self, directory=None, **kwargs):
+        super(StoreBase).__init__(**kwargs)
         self.directory = directory
+        self.set_up(directory)
+
+    def set_up(self, directory):
+        if directory is None:
+            directory = os.path.join(gettempdir(), DEFAULT_DIR_NAME)
+        self.directory = directory
+        if not os.path.exists(directory):
+            try:
+                os.makedirs(directory, 0o655)
+            except OSError as exc:
+                raise StoreSetupError(str(exc))
+
+    def _create_bucket(self, name, start):
+        return Bucket()
 
     def _get_bucket(self, name, timestamp):
         pass
@@ -14,15 +34,10 @@ class Store(StoreBase):
     def _get_buckets(self, name, interval=None):
         pass
 
-    def retrieve(self, name, interval):
-        pass
-
-    def forget(self, interval=None):
-        pass
 
 
 class Bucket(BucketBase):
-    
+
     def append(self, timestamp, data):
         pass
 

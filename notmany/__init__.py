@@ -5,5 +5,3 @@ __all__ = [
     'retrieve'
 ]
 
-# bucket size in hours
-BUCKET_SIZE = 1
