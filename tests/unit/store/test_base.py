@@ -190,7 +190,6 @@ class BaseStoreGetBucketsTestCase(TestCase):
 
         self.check_all_intervals(buckets, 'buba', timedelta(seconds=300), store)
 
-
     def test_get_buckets_size_420_check_buckets(self):
         store = DummyStore(bucket_size=420)
         inter = Interval(start=self.start, delta=timedelta(hours=3))
@@ -202,7 +201,6 @@ class BaseStoreGetBucketsTestCase(TestCase):
 
         self.check_all_intervals(buckets, 'buba', timedelta(seconds=420), store)
 
-
     def test_get_bucket_with_size_hour_check_buckets(self):
         self.fail()
 
@@ -211,19 +209,30 @@ class BaseStoreGetBucketsTestCase(TestCase):
 
     def check_all_intervals(self, buckets, name, delta, store):
 
+        hour = buckets[0].start.hour
         for i, bucket in enumerate(buckets):
-            if i > 0:
-                self.assertEqual(bucket.start, buckets[i - 1].start + delta)
+            # on beginning of each our we will get the 00 bucket
+            if hour == bucket.start.hour:
+                if i > 0:
+                    self.assertEqual(bucket.start, buckets[i - 1].start + delta)
+            else:
+                self.assertEqual(0, bucket.start.minute)
+                hour = bucket.start.hour
+
             self.assertEqual(bucket.name, name)
             self.assertEqual(bucket.length, delta.seconds)
 
             # make sure that random timestamp from inside that bucket lands
             # in that bucket
-            timestamp = bucket.start + timedelta(seconds=randint(1, bucket.length))
+            timestamp = bucket.start + timedelta(seconds=randint(0, bucket.length - 1))
             same_bucket = store._get_bucket(name, timestamp)
-            self.assertEqual(same_bucket.start, bucket.start)
-
-
+            # we can get here a bucket from the next hour (every hour is) so it will be the same bucket
+            # or first one from last hour
+            if same_bucket.start.hour == bucket.start.hour:
+                self.assertEqual(same_bucket.start, bucket.start)
+            else:
+                self.assertEqual(same_bucket.start.hour, bucket.start.hour + 1)
+                self.assertEqual(same_bucket.start.minute, 0)
 
 
 class BaseStoreTestCase(TestCase):

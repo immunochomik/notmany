@@ -1,7 +1,8 @@
 from __future__ import print_function, division
 
+import six
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 from functools import partial
 
@@ -63,7 +64,8 @@ class StoreSetupError(Exception):
     pass
 
 
-class StoreBase(ABC):
+@six.add_metaclass(ABCMeta)
+class StoreBase(object):
 
     def __init__(self, bucket_size=BUCKET_SIZE):
         if bucket_size % 60:
@@ -151,7 +153,6 @@ class StoreBase(ABC):
             if bucket.start > interval.end:
                 break
 
-
     def get_all(self):
         pass
 
@@ -167,7 +168,8 @@ class StoreBase(ABC):
             bucket.delete()
 
 
-class BucketBase(ABC):
+@six.add_metaclass(ABCMeta)
+class BucketBase(object):
     __slots__ = ['name', 'start', 'length']
 
     def __init__(self, name, start, length):
