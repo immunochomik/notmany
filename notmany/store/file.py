@@ -11,7 +11,7 @@ DEFAULT_DIR_NAME = 'notmany_store'
 class Store(StoreBase):
 
     def __init__(self, directory=None, **kwargs):
-        super(StoreBase).__init__(**kwargs)
+        StoreBase.__init__(self, **kwargs)
         self.directory = directory
         self.set_up(directory)
 
@@ -28,7 +28,7 @@ class Store(StoreBase):
     def _create_bucket(self, name, start):
         return Bucket()
 
-    def _get_bucket(self, name, timestamp):
+    def _get_bucket(self, name, dt):
         pass
 
     def _get_buckets(self, name, interval=None):

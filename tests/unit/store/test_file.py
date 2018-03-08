@@ -11,6 +11,8 @@ from notmany.store.base import StoreSetupError
 
 # TODO Add prevention form running this test as root as this will invalidate the test
 # and can be done easily by mistake
+from tests.utils import dt
+
 
 class FileStoreTestCase(TestCase):
 
@@ -62,4 +64,9 @@ class FileStoreTestCase(TestCase):
 
     def test_record_with_existing_buckets_check_correct_one_updated(self):
         self.fail()
+
+    def test_get_bucket_check_name(self):
+        store = Store(bucket_size=24 * 3600)
+        bucket = store._get_bucket('some_name', dt('2018-03-03 00:00:00'))
+        self.assertEqual(bucket.name, 'some_name')
 

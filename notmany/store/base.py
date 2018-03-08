@@ -1,12 +1,17 @@
 from __future__ import print_function, division
 
-from datetime import datetime
+
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
+from functools import partial
 
 __all__ = [
     'StoreBase',
     'BucketBase',
-    'StoreSetupError'
+    'StoreSetupError',
+    'Interval',
+    'FORMAT',
+    'get_datetime',
 ]
 
 # bucket size in seconds
@@ -14,6 +19,32 @@ BUCKET_SIZE = 3600
 SEC_IN_DAY = 3600 * 24
 
 FORMAT = "%Y-%m-%d %H:%M:%S"
+def dt(date):
+    return datetime.strptime(date, FORMAT)
+
+
+class Interval(object):
+    __slots__ = ['start', 'end']
+
+    def __init__(self, start, end=None, delta=None):
+        """
+        Create Interval object with datetime start and end
+        :param start: the beginning
+        :type start: datetime
+        :param end: this is the end my only truly friend the end
+        :type end: datetime | None
+        :param delta: end can be expressed as timedelta
+        :type delta: timedelta | None
+        """
+        self.start = get_datetime(start)
+
+        if end is None:
+            self.end = self.start + delta
+        else:
+            self.end = get_datetime(end)
+
+        if self.start > self.end:
+            raise RuntimeError('Invalid interval start after end')
 
 
 def stamp(date):
@@ -35,6 +66,8 @@ class StoreSetupError(Exception):
 class StoreBase(ABC):
 
     def __init__(self, bucket_size=BUCKET_SIZE):
+        if bucket_size % 60:
+            raise NotImplementedError('Currently buckets have to be in minutes')
         if bucket_size > 3600 * 24:
             raise NotImplementedError('We do not support buckets larger than 24 h')
         self._bucket_size = bucket_size
@@ -62,25 +95,28 @@ class StoreBase(ABC):
             for item in bucket:
                 yield item
 
-    def _get_bucket(self, name, timestamp):
+    def _get_bucket(self, name, dt):
         """
         Get one correct bucket for given interval
         :param name:
-        :param timestamp:
+        :param dt: 
+        :type dt: datetime
         :return:
         :rtype: BucketBase
         """
-        dt = get_datetime(timestamp)
 
         base = dt.replace(minute=0, second=0, microsecond=0)
+
         if self._bucket_size < 3600:
             minutes_in_bucket = int(self._bucket_size / 60)
             return self._create_bucket(
                 name=name,
                 start=base.replace(
                     minute=int(dt.minute / minutes_in_bucket) * minutes_in_bucket))
+
         if self._bucket_size == 3600:
             return self._create_bucket(name=name, start=base)
+
         if self._bucket_size > 3600:
             h_in_bucket = int(self._bucket_size / 3600)
             return self._create_bucket(
@@ -96,16 +132,29 @@ class StoreBase(ABC):
         """
         pass
 
-    @abstractmethod
-    def _get_buckets(self, name, interval=None):
+    def _get_buckets(self, name, interval):
         """
         Get buckets for name and interval
         :param name:
-        :param interval:
+        :param interval:  time interval
+        :type interval: Interval
         :return:
         :rtype: list of BucketBase
         """
-        return []
+        get_bucket = partial(self._get_bucket, name=name)
+
+        bucket = get_bucket(dt=interval.start)
+
+        while True:
+            yield bucket
+            bucket = get_bucket(dt=bucket.start + timedelta(seconds=self._bucket_size))
+            if bucket.start > interval.end:
+                break
+
+
+    def get_all(self):
+        pass
+
 
     def forget(self, name, interval=None):
         """
