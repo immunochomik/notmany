@@ -20,6 +20,7 @@ BUCKET_SIZE = 3600
 SEC_IN_DAY = 3600 * 24
 
 FORMAT = "%Y-%m-%d %H:%M:%S"
+
 def dt(date):
     return datetime.strptime(date, FORMAT)
 
@@ -153,9 +154,9 @@ class StoreBase(object):
             if bucket.start > interval.end:
                 break
 
-    def get_all(self):
-        pass
-
+    @abstractmethod
+    def get_all(self, name):
+        return []
 
     def forget(self, name, interval=None):
         """
@@ -164,7 +165,12 @@ class StoreBase(object):
         :param interval:
         :return:
         """
-        for bucket in self._get_buckets(name=name, interval=interval):
+        if interval is None:
+            buckets = self.get_all(name)
+        else:
+            buckets = self._get_buckets(name=name, interval=interval)
+
+        for bucket in buckets:
             bucket.delete()
 
 

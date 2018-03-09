@@ -27,6 +27,9 @@ class DummyBucket(BucketBase):
 
 class DummyStore(StoreBase):
 
+    def get_all(self, name):
+        pass
+
     def _create_bucket(self, name, start):
         return DummyBucket(name=name, start=start, length=self.bucket_size)
 
@@ -163,6 +166,7 @@ class BaseStoreGetBucketTestCase(TestCase):
             DummyStore(bucket_size=200)
         self.assertEqual(str(con.exception), 'Currently buckets have to be in minutes')
 
+
 class BaseStoreGetBucketsTestCase(TestCase):
 
     start = dt('2018-03-03 06:25:11')
@@ -192,20 +196,45 @@ class BaseStoreGetBucketsTestCase(TestCase):
 
     def test_get_buckets_size_420_check_buckets(self):
         store = DummyStore(bucket_size=420)
-        inter = Interval(start=self.start, delta=timedelta(hours=3))
+        inter = Interval(start=self.start, delta=timedelta(hours=27))
         buckets = list(store._get_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:21:00'))
 
-        self.assertEqual(buckets[-1].start, dt('2018-03-03 09:21:00'))
+        self.assertEqual(buckets[-1].start, dt('2018-03-04 09:21:00'))
 
         self.check_all_intervals(buckets, 'buba', timedelta(seconds=420), store)
 
-    def test_get_bucket_with_size_hour_check_buckets(self):
-        self.fail()
+    def test_get_bucket_with_1_size_hour_check_buckets(self):
+        store = DummyStore(bucket_size=3600)
+        inter = Interval(start=self.start, delta=timedelta(hours=27))
+        buckets = list(store._get_buckets('buba', interval=inter))
 
-    def test_get_buckets_with_size_more_than_hour_check_buckets(self):
-        self.fail()
+        self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
+        self.assertEqual(buckets[-1].start, dt('2018-03-04 09:00:00'))
+
+        self.check_all_intervals(buckets, 'buba', timedelta(seconds=3600), store)
+
+    def test_get_bucket_with_2_size_hour_check_buckets(self):
+        store = DummyStore(bucket_size=7200)
+        inter = Interval(start=self.start, delta=timedelta(hours=27))
+        buckets = list(store._get_buckets('buba', interval=inter))
+
+        self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
+        self.assertEqual(buckets[-1].start, dt('2018-03-04 08:00:00'))
+
+        self.check_all_intervals(buckets, 'buba', timedelta(seconds=7200), store)
+
+    def test_get_bucket_with_3_size_hour_check_buckets(self):
+        store = DummyStore(bucket_size=3 * 3600)
+        inter = Interval(start=self.start, delta=timedelta(hours=27))
+        buckets = list(store._get_buckets('buba', interval=inter))
+
+        self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
+        self.assertEqual(buckets[-1].start, dt('2018-03-04 09:00:00'))
+
+        self.check_all_intervals(buckets, 'buba', timedelta(seconds=3 * 3600), store)
+
 
     def check_all_intervals(self, buckets, name, delta, store):
 
@@ -231,11 +260,16 @@ class BaseStoreGetBucketsTestCase(TestCase):
             if same_bucket.start.hour == bucket.start.hour:
                 self.assertEqual(same_bucket.start, bucket.start)
             else:
-                self.assertEqual(same_bucket.start.hour, bucket.start.hour + 1)
+                # start hour will be next hour it might be 0 at midnight hence modulo 24
+                self.assertEqual(same_bucket.start.hour, (bucket.start.hour + 1) % 24)
+
                 self.assertEqual(same_bucket.start.minute, 0)
 
 
 class BaseStoreTestCase(TestCase):
 
     def test_assignment_of_bucket_size_raises(self):
-        self.fail()
+        store = DummyStore()
+        with self.assertRaises(AttributeError):
+            store.bucket_size = 1
+
