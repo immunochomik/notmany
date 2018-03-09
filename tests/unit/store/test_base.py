@@ -56,7 +56,6 @@ class BaseStoreGetBucketTestCase(TestCase):
             bucket = store._get_bucket(name='fufu', dt=check.date)
             self.assertEqual(bucket.start, check.bucket)
 
-
         store = DummyStore(bucket_size=300)
         checks = (
             Check(date=dt('2018-03-03 12:35:57'), bucket=dt('2018-03-03 12:35:00')),

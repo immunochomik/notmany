@@ -179,11 +179,11 @@ class BucketBase(object):
     __slots__ = ['name', 'start', 'length']
 
     def __init__(self, name, start, length):
+        assert isinstance(start, datetime), 'Start is datetime'
+        assert isinstance(length, int), 'Length is int'
         self.name = name
         self.start = start
         self.length = length
-        if not self.exists():
-            self._create()
 
     @abstractmethod
     def _create(self):
