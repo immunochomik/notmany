@@ -10,6 +10,7 @@ DEFAULT_DIR_NAME = 'notmany_store'
 path_exists = os.path.exists
 path_join = os.path.join
 
+
 class Store(StoreBase):
     def __init__(self, directory=None, **kwargs):
         StoreBase.__init__(self, **kwargs)
@@ -39,7 +40,7 @@ class Bucket(BucketBase):
     def __init__(self, name, start, length, base):
         BucketBase.__init__(self, name=name, start=start, length=length)
         self.file_name = self.start.strftime('%H_%M_%S')
-        self.dir = path_join(base, name, self.start.strftime('%Y_%m_%d'), str(self.length))
+        self.dir = path_join(base, name, str(self.length), self.start.strftime('%Y_%m_%d'))
 
     @property
     def full_path(self):
@@ -48,18 +49,15 @@ class Bucket(BucketBase):
     def append(self, timestamp, data):
         if not path_exists(path_join(self.dir)):
             os.makedirs(self.dir)
-
-        with open(self.full_path, '+a') as fp:
+        with open(self.full_path, 'a+') as fp:
             fp.write('{} {}\n'.format(timestamp, data))
 
-    def exists(self):
-        pass
-
-    def _create(self):
-        pass
-
     def read(self):
-        pass
+        if path_exists(self.full_path):
+            with open(self.full_path, 'r') as fp:
+                for line in fp:
+                    yield line.rstrip()
 
     def delete(self):
-        pass
+        if path_exists(self.full_path):
+            os.remove(self.full_path)

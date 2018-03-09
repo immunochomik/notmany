@@ -61,6 +61,10 @@ def get_datetime(timestamp):
     return timestamp
 
 
+def naive_tstamp(dt):
+    return (dt - datetime(1970, 1, 1)).total_seconds()
+
+
 class StoreSetupError(Exception):
     pass
 
@@ -87,8 +91,9 @@ class StoreBase(object):
         :param data:
         :return:
         """
-        bucket = self._get_bucket(name, timestamp)
-        bucket.append(timestamp, data)
+        dt = get_datetime(timestamp)
+        bucket = self._get_bucket(name, dt)
+        bucket.append(naive_tstamp(dt), data)
 
     def retrieve(self, name, interval):
         """
@@ -185,13 +190,8 @@ class BucketBase(object):
         self.start = start
         self.length = length
 
-    @abstractmethod
-    def _create(self):
-        pass
-
-    @abstractmethod
-    def exists(self):
-        pass
+    def __iter__(self):
+        return self.read()
 
     @abstractmethod
     def append(self, timestamp, data):
@@ -199,7 +199,8 @@ class BucketBase(object):
 
     @abstractmethod
     def read(self):
-        pass
+        for item in []:
+            yield item
 
     @abstractmethod
     def delete(self):

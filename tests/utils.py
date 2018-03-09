@@ -25,3 +25,8 @@ def temporary_directory(sub_name=None):
     finally:
         shutil.rmtree(tmp_dir)
 
+
+def file_content(path):
+    with open(path, 'r') as fp:
+        return fp.read()
+
