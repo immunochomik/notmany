@@ -1,4 +1,3 @@
-
 import os
 import shutil
 from datetime import timedelta
@@ -15,7 +14,6 @@ from tests.utils import dt, temporary_directory, file_content
 
 
 class FileBucketTestCase(TestCase):
-
     def setUp(self):
         self.name = 'some'
         self.start = dt('2018-03-03 12:30:00')
@@ -100,7 +98,6 @@ class FileBucketTestCase(TestCase):
 
 
 class FileStoreTestCase(TestCase):
-
     def setUp(self):
         self.name = 'some'
         self.start = dt('2018-03-03 12:30:00')
@@ -132,7 +129,16 @@ class FileStoreTestCase(TestCase):
             buck = store._get_bucket('some', dt('2017-03-03 10:25:11'))
             self.assertFalse(os.path.exists(buck.full_path))
 
-    def test_delete_buckets_check_correct_buckets_deleted(self):
+    def test_forget_interval_check_correct_buckets_deleted(self):
+        with temporary_directory() as tem_dir:
+            self.make_three_buckets(tem_dir=tem_dir)
+
+            store = Store(directory=tem_dir, bucket_size=600)
+            store.forget(name='some', interval=Interval(start=self.start, delta=timedelta(days=3)))
+            self.assertEquals([], os.listdir(tem_dir))
+
+
+    def test_get_all_check_all(self):
         self.fail()
 
     def test_retrieve_with_interval_check_all_data_points_retrieved(self):
@@ -142,25 +148,58 @@ class FileStoreTestCase(TestCase):
             store.record(name='some', timestamp=self.start, data='pending:7;cpu:11.6')
             ts = self.start + timedelta(seconds=1200)
             store.record(name='some', timestamp=ts, data='pending:7;cpu:11.8')
+            self.fail()
 
     def test_record_metric_with_no_buckets_check_buckets_created(self):
         with temporary_directory() as tem_dir:
-            store = Store(directory=tem_dir, bucket_size=600)
-            store.record(name='some', timestamp=self.start, data='pending:7;cpu:11.6')
-            ts = self.start + timedelta(seconds=1200)
-            store.record(name='some', timestamp=ts, data='pending:7;cpu:11.8')
-            ts = ts + timedelta(hours=5)
-            store.record(name='some', timestamp=ts, data='pending:3;cpu:11.8')
-            files = list(os.listdir(os.path.join(tem_dir, 'some', '600', '2018_03_03')))
-            self.assertEqual(3, len(files))
-
+            self.make_three_buckets(tem_dir=tem_dir)
 
 
     def test_record_with_existing_buckets_check_correct_one_updated(self):
-        self.fail()
+        with temporary_directory() as tem_dir:
+            self.make_three_buckets(tem_dir=tem_dir)
+
+            store = Store(directory=tem_dir, bucket_size=600)
+            store.record(name='some',
+                         timestamp=self.start + timedelta(seconds=20), data='pending:10;cpu:11.6')
+            ts = self.start + timedelta(seconds=1220)
+            store.record(name='some', timestamp=ts, data='pending:17;cpu:11.8')
+            ts = ts + timedelta(hours=5)
+            store.record(name='some', timestamp=ts, data='pending:4;cpu:11.8')
+            base = os.path.join(tem_dir, 'some', '600', '2018_03_03')
+
+            files = list(os.listdir(base))
+            self.assertEqual(3, len(files))
+            content = [file_content(base, file) for file in files]
+            self.assertListEqual(
+                content,
+                ['1520099400.0 pending:3;cpu:11.8\n1520099420.0 pending:4;cpu:11.8\n',
+                 '1520080200.0 pending:7;cpu:11.6\n1520080220.0 pending:10;cpu:11.6\n',
+                 '1520081400.0 pending:7;cpu:11.8\n1520081420.0 pending:17;cpu:11.8\n']
+            )
+
 
     def test_get_bucket_check_name(self):
         store = Store(bucket_size=24 * 3600)
         bucket = store._get_bucket('some_name', dt('2018-03-03 00:00:00'))
         self.assertEqual(bucket.name, 'some_name')
 
+    def make_three_buckets(self, tem_dir):
+
+        store = Store(directory=tem_dir, bucket_size=600)
+        store.record(name='some', timestamp=self.start, data='pending:7;cpu:11.6')
+        ts = self.start + timedelta(seconds=1200)
+        store.record(name='some', timestamp=ts, data='pending:7;cpu:11.8')
+        ts = ts + timedelta(hours=5)
+        store.record(name='some', timestamp=ts, data='pending:3;cpu:11.8')
+        base = os.path.join(tem_dir, 'some', '600', '2018_03_03')
+
+        files = list(os.listdir(base))
+        self.assertEqual(3, len(files))
+        content = [file_content(base, file) for file in files]
+        self.assertListEqual(
+            content,
+            ['1520099400.0 pending:3;cpu:11.8\n',
+             '1520080200.0 pending:7;cpu:11.6\n',
+             '1520081400.0 pending:7;cpu:11.8\n']
+        )

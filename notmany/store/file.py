@@ -2,6 +2,10 @@
 import os
 from tempfile import gettempdir
 
+import shutil
+
+import errno
+
 from .base import StoreBase, BucketBase, StoreSetupError
 
 DEFAULT_DIR_NAME = 'notmany_store'
@@ -9,6 +13,8 @@ DEFAULT_DIR_NAME = 'notmany_store'
 # petty optimisations
 path_exists = os.path.exists
 path_join = os.path.join
+
+#TODO add logging
 
 
 class Store(StoreBase):
@@ -31,7 +37,38 @@ class Store(StoreBase):
         return Bucket(name=name, start=start, length=self.bucket_size, base=self.directory)
 
     def get_all(self, name):
-        pass
+        return []
+
+    def forget(self, name, interval=None):
+        """
+        Will delete all day directories touched by the interval so be
+        :param name:
+        :param interval:
+        :return:
+        """
+        if interval is None:
+            buckets = self.get_all(name)
+        else:
+            buckets = self._get_buckets(name=name, interval=interval)
+
+        for directory in set([bucket.dir for bucket in buckets]):
+            if os.path.exists(directory):
+                shutil.rmtree(directory)
+
+        parents = [
+            path_join(self.directory, name, str(self.bucket_size)),
+            path_join(self.directory, name)
+        ]
+
+        for directory in parents:
+            try:
+                os.rmdir(directory)
+            except OSError as exc:
+                if exc.errno == errno.ENOTEMPTY:
+                    print('Directory not empty')
+                else:
+                    raise exc
+
 
 
 class Bucket(BucketBase):

@@ -163,20 +163,17 @@ class StoreBase(object):
     def get_all(self, name):
         return []
 
+    @abstractmethod
     def forget(self, name, interval=None):
         """
         Delete buckets in the interval
         :param name:
-        :param interval:
+        :param interval: interval to delete
+        :type interval: Interval
         :return:
         """
-        if interval is None:
-            buckets = self.get_all(name)
-        else:
-            buckets = self._get_buckets(name=name, interval=interval)
 
-        for bucket in buckets:
-            bucket.delete()
+
 
 
 @six.add_metaclass(ABCMeta)
