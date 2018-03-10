@@ -129,7 +129,7 @@ class FileStoreTestCase(TestCase):
             buck = store._get_bucket('some', dt('2017-03-03 10:25:11'))
             self.assertFalse(os.path.exists(buck.full_path))
 
-    def test_forget_interval_check_correct_buckets_deleted(self):
+    def test_forget_interval_including_all_check_namespace_deleted(self):
         with temporary_directory() as tem_dir:
             self.make_three_buckets(tem_dir=tem_dir)
 
@@ -137,6 +137,34 @@ class FileStoreTestCase(TestCase):
             store.forget(name='some', interval=Interval(start=self.start, delta=timedelta(days=3)))
             self.assertEquals([], os.listdir(tem_dir))
 
+    def test_forget_interval_with_not_all_in_it_check_we_leave_stuff_from_days_not_in_interval(self):
+        with temporary_directory() as tem_dir:
+            self.make_three_buckets(tem_dir=tem_dir)
+
+            store = Store(directory=tem_dir, bucket_size=600)
+            ts = self.start + timedelta(days=2)
+            store.record(name='some', timestamp=ts, data='pending:1')
+            ts += timedelta(seconds=1200)
+            store.record(name='some', timestamp=ts, data='pending:2')
+            ts += timedelta(hours=5)
+            store.record(name='some', timestamp=ts, data='pending:3')
+            base = os.path.join(tem_dir, 'some', '600', '2018_03_05')
+
+            files = list(os.listdir(base))
+            self.assertEqual(3, len(files))
+            content = [file_content(base, file) for file in files]
+            print(content)
+            self.assertListEqual(
+                content,
+                ['1520272200.0 pending:3\n',
+                 '1520253000.0 pending:1\n',
+                 '1520254200.0 pending:2\n']
+            )
+
+            to_remove = Interval(start=self.start, delta=timedelta(days=1))
+            store.forget(name='some', interval=to_remove)
+
+            self.assertTrue(os.path.exists(base))
 
     def test_get_all_check_all(self):
         self.fail()

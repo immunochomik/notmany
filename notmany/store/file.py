@@ -64,9 +64,7 @@ class Store(StoreBase):
             try:
                 os.rmdir(directory)
             except OSError as exc:
-                if exc.errno == errno.ENOTEMPTY:
-                    print('Directory not empty')
-                else:
+                if exc.errno != errno.ENOTEMPTY:
                     raise exc
 
 
