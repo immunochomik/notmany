@@ -1,12 +1,13 @@
 
 import os
+from datetime import datetime
 from tempfile import gettempdir
 
 import shutil
 
 import errno
 
-from .base import StoreBase, BucketBase, StoreSetupError
+from .base import StoreBase, BucketBase, StoreSetupError, RecordFew
 
 DEFAULT_DIR_NAME = 'notmany_store'
 
@@ -18,6 +19,7 @@ path_join = os.path.join
 
 
 class Store(StoreBase):
+
     def __init__(self, directory=None, **kwargs):
         StoreBase.__init__(self, **kwargs)
         self.directory = directory
@@ -37,19 +39,26 @@ class Store(StoreBase):
         return Bucket(name=name, start=start, length=self.bucket_size, base=self.directory)
 
     def get_all(self, name):
+        """
+        List directory and create buckets form files ?
+        :param name:
+        :return:
+        """
+        # for file in os walk yield bucket from file
         return []
 
     def forget(self, name, interval=None):
         """
         Will delete all day directories touched by the interval so be
+        # TODO we should delte only buckets in interval if the
+        # days in the interval are the same os we would not delte all day
+        # heen just the individual buckets
         :param name:
         :param interval:
-        :return:
+        :type interval: Interval
+        :return: None
         """
-        if interval is None:
-            buckets = self.get_all(name)
-        else:
-            buckets = self._get_buckets(name=name, interval=interval)
+        buckets = self._get_buckets(name=name, interval=interval)
 
         for directory in set([bucket.dir for bucket in buckets]):
             if os.path.exists(directory):
@@ -66,7 +75,19 @@ class Store(StoreBase):
             except OSError as exc:
                 if exc.errno != errno.ENOTEMPTY:
                     raise exc
+                return
 
+    def retrieve(self, name, interval=None):
+        for bucket in self._get_buckets(name=name, interval=interval):
+            for item in bucket:
+                yield item
+
+    def retrieve_stored(self, name, interval=None):
+        buckets = self._get_buckets(name=name, interval=interval)
+
+        for directory in set([bucket.dir for bucket in buckets]):
+            for item in os.walk(directory):
+                print(item)
 
 
 class Bucket(BucketBase):
@@ -91,8 +112,27 @@ class Bucket(BucketBase):
         if path_exists(self.full_path):
             with open(self.full_path, 'r') as fp:
                 for line in fp:
-                    yield line.rstrip()
+                    try:
+                        yield RecordFew(line)
+                    except (ValueError, IndexError):
+                        pass
 
     def delete(self):
         if path_exists(self.full_path):
             os.remove(self.full_path)
+
+    @staticmethod
+    def create(base, file_path):
+        """
+        Creates a Bucket instance from its file path
+        :param base:
+        :param file_path:
+        :return:
+        """
+        description = file_path.replace(base, '').lstrip(os.sep)
+        el = description.split(os.sep)
+
+        start = datetime.strptime('{} {}'.format(el[2], el[3]), '%Y_%m_%d %H_%M_%S')
+
+        return Bucket(name=el[0], start=start, length=int(el[1]), base=base)
+

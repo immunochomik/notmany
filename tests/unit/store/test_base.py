@@ -4,7 +4,7 @@ from datetime import timedelta
 from random import randint
 from unittest import TestCase
 
-from notmany.store.base import BucketBase, StoreBase, Interval
+from notmany.store.base import BucketBase, StoreBase, Interval, RecordFew
 from tests.utils import dt
 
 
@@ -27,6 +27,12 @@ class DummyBucket(BucketBase):
 
 class DummyStore(StoreBase):
 
+    def forget(self, name, interval=None):
+        pass
+
+    def retrieve(self, name, interval=None):
+        pass
+
     def get_all(self, name):
         pass
 
@@ -35,6 +41,40 @@ class DummyStore(StoreBase):
 
 
 Check = namedtuple('Check', ['date', 'bucket'])
+
+
+class RecordFewTestCase(TestCase):
+
+    def test_create_happy_path_check_record(self):
+        record = RecordFew('1234535.0 foo:1,bar:2.4')
+        self.assertEqual(1234535.0, record.ts)
+        self.assertEqual({
+            'foo': 1.0,
+            'bar': 2.4
+        }, record.data)
+
+    def test_create_happy_path_2_check_record(self):
+        record = RecordFew('1234535.0 foo:1\n')
+        self.assertEqual(1234535.0, record.ts)
+        self.assertEqual({
+            'foo': 1.0,
+        }, record.data)
+
+    def test_invalid_string_line_check_rises(self):
+        with self.assertRaises(ValueError):
+            RecordFew('1234535.0 foo:1;bar:2.4')
+
+    def test_invalid_timestamp(self):
+        with self.assertRaises(ValueError):
+            RecordFew('sdfasd foo:1')
+
+    def test_no_data_check_what_rises(self):
+        with self.assertRaises(IndexError):
+            RecordFew('1234535.0')
+
+    def test_what_rises(self):
+        with self.assertRaises(ValueError):
+            RecordFew('1234535.0 safd:dsfd,aadf')
 
 
 class BaseStoreGetBucketTestCase(TestCase):
@@ -174,7 +214,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_buckets_with_size_less_than_hour_check_buckets(self):
         store = DummyStore(bucket_size=600)
         inter = Interval(start=self.start, delta=timedelta(hours=10))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:20:00'))
 
@@ -185,7 +225,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_buckets_300_check_buckets(self):
         store = DummyStore(bucket_size=300)
         inter = Interval(start=self.start, delta=timedelta(hours=5))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:25:00'))
 
@@ -196,7 +236,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_buckets_size_420_check_buckets(self):
         store = DummyStore(bucket_size=420)
         inter = Interval(start=self.start, delta=timedelta(hours=27))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:21:00'))
 
@@ -207,7 +247,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_bucket_with_1_size_hour_check_buckets(self):
         store = DummyStore(bucket_size=3600)
         inter = Interval(start=self.start, delta=timedelta(hours=27))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
         self.assertEqual(buckets[-1].start, dt('2018-03-04 09:00:00'))
@@ -217,7 +257,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_bucket_with_2_size_hour_check_buckets(self):
         store = DummyStore(bucket_size=7200)
         inter = Interval(start=self.start, delta=timedelta(hours=27))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
         self.assertEqual(buckets[-1].start, dt('2018-03-04 08:00:00'))
@@ -227,7 +267,7 @@ class BaseStoreGetBucketsTestCase(TestCase):
     def test_get_bucket_with_3_size_hour_check_buckets(self):
         store = DummyStore(bucket_size=3 * 3600)
         inter = Interval(start=self.start, delta=timedelta(hours=27))
-        buckets = list(store._get_buckets('buba', interval=inter))
+        buckets = list(store._interval_buckets('buba', interval=inter))
 
         self.assertEqual(buckets[0].start, dt('2018-03-03 06:00:00'))
         self.assertEqual(buckets[-1].start, dt('2018-03-04 09:00:00'))

@@ -95,14 +95,6 @@ class StoreBase(object):
         bucket = self._get_bucket(name, dt)
         bucket.append(naive_tstamp(dt), data)
 
-    def retrieve(self, name, interval):
-        """
-        Retrieve all data points in given interval
-        """
-        for bucket in self._get_buckets(name, interval):
-            for item in bucket:
-                yield item
-
     def _get_bucket(self, name, dt):
         """
         Get one correct bucket for given interval
@@ -140,14 +132,27 @@ class StoreBase(object):
         """
         pass
 
-    def _get_buckets(self, name, interval):
+    def _get_buckets(self, name, interval=None):
+        """
+        Decide if use get all or if use interval
+        :param name:
+        :param interval:
+        :type interval: Interval | None
+        :return: Generator
+        """
+        if interval is None:
+            return self.get_all(name)
+        else:
+            return self._interval_buckets(name=name, interval=interval)
+
+    def _interval_buckets(self, name, interval):
         """
         Get buckets for name and interval
         :param name:
         :param interval:  time interval
         :type interval: Interval
         :return:
-        :rtype: list of BucketBase
+        :rtype: Generator of BucketBase
         """
         get_bucket = partial(self._get_bucket, name=name)
 
@@ -161,7 +166,18 @@ class StoreBase(object):
 
     @abstractmethod
     def get_all(self, name):
-        return []
+        """
+
+        :param name:
+        :return: Generator
+        """
+
+    @abstractmethod
+    def retrieve(self, name, interval=None):
+        """
+        Retrieve all data points in given interval
+        :returns: Iterable
+        """
 
     @abstractmethod
     def forget(self, name, interval=None):
@@ -172,8 +188,6 @@ class StoreBase(object):
         :type interval: Interval
         :return:
         """
-
-
 
 
 @six.add_metaclass(ABCMeta)
@@ -204,3 +218,24 @@ class BucketBase(object):
         pass
 
 
+class RecordFew(object):
+    __slots__ = ['ts', 'data', 'line']
+
+    def __init__(self, line):
+        """
+        Create record from line
+
+        :param line: e.g 153243424.1 foo:2.3,bar:0\n
+        :type line: str | unicode
+        :raises: ValueError | IndexError
+        """
+        self.line = line
+
+        parts = line.rstrip().split(' ')
+        self.ts = float(parts[0])
+
+        data = {}
+        for pair in parts[1].split(','):
+            elem = pair.split(':')
+            data[elem[0]] = float(elem[1])
+        self.data = data

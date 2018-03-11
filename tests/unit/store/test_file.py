@@ -1,6 +1,6 @@
 import os
 import shutil
-from datetime import timedelta
+from datetime import timedelta, datetime
 from tempfile import gettempdir
 from unittest import TestCase
 from uuid import uuid4
@@ -96,6 +96,18 @@ class FileBucketTestCase(TestCase):
             buck.delete()
             self.assertFalse(os.path.exists(buck.full_path))
 
+    def test_create_from_file(self):
+        base = os.path.join('tmp1')
+        dire = os.path.join(base, 'some', '420', '2018_03_02')
+        path = os.path.join(dire, '12_30_00')
+        bucket = Bucket.create(base=base, file_path=path)
+        self.assertEquals(bucket.name, 'some')
+        self.assertEquals(bucket.length, 420)
+        self.assertEquals(bucket.start, datetime(2018, 3, 2, 12, 30))
+        self.assertEquals(bucket.dir, dire)
+        self.assertEquals(bucket.file_name, '12_30_00')
+        self.assertEquals(bucket.full_path, path)
+
 
 class FileStoreTestCase(TestCase):
     def setUp(self):
@@ -135,7 +147,7 @@ class FileStoreTestCase(TestCase):
 
             store = Store(directory=tem_dir, bucket_size=600)
             store.forget(name='some', interval=Interval(start=self.start, delta=timedelta(days=3)))
-            self.assertEquals([], os.listdir(tem_dir))
+            self.assertEqual([], os.listdir(tem_dir))
 
     def test_forget_interval_with_not_all_in_it_check_we_leave_stuff_from_days_not_in_interval(self):
         with temporary_directory() as tem_dir:
@@ -173,9 +185,14 @@ class FileStoreTestCase(TestCase):
 
         with temporary_directory() as tem_dir:
             store = Store(directory=tem_dir, bucket_size=600)
-            store.record(name='some', timestamp=self.start, data='pending:7;cpu:11.6')
-            ts = self.start + timedelta(seconds=1200)
-            store.record(name='some', timestamp=ts, data='pending:7;cpu:11.8')
+            for i in range(20):
+                store.record(name='foo', timestamp=self.start + timedelta(minutes=60 * i), data='pending:' + str(i))
+
+            records = list(store.retrieve('foo', interval=Interval(start=self.start, delta=timedelta(hours=10))))
+
+            self.assertEqual(len(records), 11)
+            for item in records:
+                print(item)
             self.fail()
 
     def test_record_metric_with_no_buckets_check_buckets_created(self):
