@@ -66,9 +66,9 @@ class FileBucketTestCase(TestCase):
             buck.append(123457, 'cpu:8,some:8.4')
             buck.append(123456, 'cpu:8,some:8.4')
             self.assertEqual([
-                '123456 cpu:7,some:8.4',
-                '123457 cpu:8,some:8.4',
-                '123456 cpu:8,some:8.4',
+                RecordFew('123456 cpu:7,some:8.4'),
+                RecordFew('123457 cpu:8,some:8.4'),
+                RecordFew('123456 cpu:8,some:8.4'),
             ], list(buck.read()))
         self.assertFalse(os.path.exists(buck.full_path))
 
@@ -79,10 +79,11 @@ class FileBucketTestCase(TestCase):
             buck.append(123456, 'cpu:7,some:8.4')
             buck.append(123457, 'cpu:8,some:8.4')
             self.assertEqual([
-                '123456 cpu:7,some:8.4',
-                '123457 cpu:8,some:8.4',
+                RecordFew('123456 cpu:7,some:8.4'),
+                RecordFew('123457 cpu:8,some:8.4'),
             ], list(buck))
         self.assertFalse(os.path.exists(buck.full_path))
+
 
     def test_delete_check_deleted(self):
         with temporary_directory() as temp_dir:
@@ -200,7 +201,6 @@ class FileStoreTestCase(TestCase):
     def test_record_metric_with_no_buckets_check_buckets_created(self):
         with temporary_directory() as tem_dir:
             self.make_three_buckets(tem_dir=tem_dir)
-
 
     def test_record_with_existing_buckets_check_correct_one_updated(self):
         with temporary_directory() as tem_dir:

@@ -230,9 +230,10 @@ class RecordFew(object):
         :type line: str | unicode
         :raises: ValueError | IndexError
         """
+        line = line.rstrip()
         self.line = line
 
-        parts = line.rstrip().split(' ')
+        parts = line.split(' ')
         self.ts = float(parts[0])
 
         data = {}
