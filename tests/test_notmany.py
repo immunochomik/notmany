@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import TestCase
 from time import time
 
@@ -33,18 +34,45 @@ class SavingMetricsWeeksTestCase(TestCase):
             store.record('temp', timestamp=self.start + seconds(i), data='room:1')
         print('Saving records {} took {} bucket size {}'.format(count, time() - start, store.bucket_size))
 
+    def retrieve(self, store):
+        start = time()
+        records = list(store.retrieve(name='temp', interval=Interval(
+            start=self.start,
+            delta=seconds(3600 * 24 * 7)
+        )))
+
+        print('Retrieving {} records took {}'.format(len(records), time() - start))
+        return records
+
+
+    def test_foo(self):
+        store = Store(directory='store', bucket_size=600)
+        #self.save_days_of_metric(store=store, days=21)
+        start = time()
+        delta = seconds(3600 * 24)
+        records = list(store.retrieve(name='temp', interval=Interval(
+            start=dt('2018-03-03 12:30:00'),
+            delta=seconds(3600 * 24 * 21)
+        )))
+
+        print('Retrieving {} records took {}'.format(len(records), time() - start))
+
+        start = time()
+        records.sort()
+        print('Sorting took {}'.format(time() - start))
+
+
+    def test_test_sparce_data_with_empty_buckets(self):
+        self.fail()
+
+
+
     def test_I_can_save_and_retrieve_1_week_of_one_metric(self):
         with temporary_directory() as tem_dir:
             store = Store(directory=tem_dir, bucket_size=600)
             self.save_days_of_metric(store=store, days=7)
 
-            start = time()
-            records = list(store.retrieve(name='temp', interval=Interval(
-                start=self.start,
-                delta=seconds(3600 * 24 * 7)
-            )))
-
-            print('Retrieving {} records took {}'.format(len(records), time() - start))
+            records = self.retrieve(store)
             start = time()
             records.sort()
             print('Sorting took {}'.format(time() - start))

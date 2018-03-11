@@ -7,7 +7,7 @@ import shutil
 
 import errno
 
-from .base import StoreBase, BucketBase, StoreSetupError, RecordFew
+from .base import StoreBase, BucketBase, StoreSetupError
 
 DEFAULT_DIR_NAME = 'notmany_store'
 
@@ -92,7 +92,7 @@ class Store(StoreBase):
 
 class Bucket(BucketBase):
     __slots__ = ['dir', 'file_name']
-    record = RecordFew
+
 
     def __init__(self, name, start, length, base):
         BucketBase.__init__(self, name=name, start=start, length=length)
@@ -114,9 +114,15 @@ class Bucket(BucketBase):
             with open(self.full_path, 'r') as fp:
                 for line in fp:
                     try:
-                        yield self.record(line)
+                        yield self.line_to_record(line)
                     except (ValueError, IndexError) as exc:
                         print('Broken line {} {}'.format(line, exc))
+
+    @staticmethod
+    def line_to_record(line):
+        line = line.rstrip()
+        parts = line.split(' ', 1)
+        return float(parts[0]), parts[1]
 
     def delete(self):
         if path_exists(self.full_path):

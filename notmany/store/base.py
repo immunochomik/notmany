@@ -216,37 +216,3 @@ class BucketBase(object):
     @abstractmethod
     def delete(self):
         pass
-
-
-@total_ordering
-class RecordFew(object):
-    __slots__ = ['ts', 'data', 'line']
-
-    def __init__(self, line):
-        """
-        Create record from line
-
-        :param line: e.g 153243424.1 foo:2.3,bar:0\n
-        :type line: str | unicode
-        :raises: ValueError | IndexError
-        """
-        line = line.rstrip()
-        self.line = line
-
-        parts = line.split(' ')
-        self.ts = float(parts[0])
-
-        data = {}
-        for pair in parts[1].split(','):
-            elem = pair.split(':')
-            data[elem[0]] = float(elem[1])
-        self.data = data
-
-    def __eq__(self, other):
-        return self.line == other.line
-
-    def __gt__(self, other):
-        return self.ts > other.ts
-
-    def __repr__(self):
-        return "RecordFew('{}')".format(self.line)
