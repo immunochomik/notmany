@@ -247,3 +247,6 @@ class RecordFew(object):
 
     def __gt__(self, other):
         return self.ts > other.ts
+
+    def __repr__(self):
+        return "RecordFew('{}')".format(self.line)

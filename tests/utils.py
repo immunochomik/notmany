@@ -1,6 +1,6 @@
 import contextlib
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import os
 
@@ -32,4 +32,8 @@ def file_content(path, fname=None):
 
     with open(path, 'r') as fp:
         return fp.read()
+
+
+def seconds(num):
+    return timedelta(seconds=num)
 

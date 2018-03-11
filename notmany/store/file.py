@@ -31,7 +31,7 @@ class Store(StoreBase):
         self.directory = directory
         if not path_exists(directory):
             try:
-                os.makedirs(directory, 0o655)
+                os.makedirs(directory)
             except OSError as exc:
                 raise StoreSetupError(str(exc))
 

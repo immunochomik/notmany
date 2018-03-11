@@ -194,9 +194,20 @@ class FileStoreTestCase(TestCase):
             records = list(store.retrieve('foo', interval=Interval(start=self.start, delta=timedelta(hours=10))))
 
             self.assertEqual(len(records), 11)
-            for item in records:
-                print(item)
-            self.fail()
+            self.assertListEqual([
+                RecordFew('1520080200.0 pending:0'),
+                RecordFew('1520083800.0 pending:1'),
+                RecordFew('1520087400.0 pending:2'),
+                RecordFew('1520091000.0 pending:3'),
+                RecordFew('1520094600.0 pending:4'),
+                RecordFew('1520098200.0 pending:5'),
+                RecordFew('1520101800.0 pending:6'),
+                RecordFew('1520105400.0 pending:7'),
+                RecordFew('1520109000.0 pending:8'),
+                RecordFew('1520112600.0 pending:9'),
+                RecordFew('1520116200.0 pending:10')
+            ], records)
+
 
     def test_record_metric_with_no_buckets_check_buckets_created(self):
         with temporary_directory() as tem_dir:
