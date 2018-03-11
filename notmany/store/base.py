@@ -4,7 +4,7 @@ import six
 
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
-from functools import partial
+from functools import partial, total_ordering
 
 __all__ = [
     'StoreBase',
@@ -218,6 +218,7 @@ class BucketBase(object):
         pass
 
 
+@total_ordering
 class RecordFew(object):
     __slots__ = ['ts', 'data', 'line']
 
@@ -239,3 +240,9 @@ class RecordFew(object):
             elem = pair.split(':')
             data[elem[0]] = float(elem[1])
         self.data = data
+
+    def __eq__(self, other):
+        return self.line == other.line
+
+    def __gt__(self, other):
+        return self.ts > other.ts

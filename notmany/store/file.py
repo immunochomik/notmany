@@ -92,6 +92,7 @@ class Store(StoreBase):
 
 class Bucket(BucketBase):
     __slots__ = ['dir', 'file_name']
+    record = RecordFew
 
     def __init__(self, name, start, length, base):
         BucketBase.__init__(self, name=name, start=start, length=length)
@@ -113,9 +114,9 @@ class Bucket(BucketBase):
             with open(self.full_path, 'r') as fp:
                 for line in fp:
                     try:
-                        yield RecordFew(line)
-                    except (ValueError, IndexError):
-                        pass
+                        yield self.record(line)
+                    except (ValueError, IndexError) as exc:
+                        print('Broken line {} {}'.format(line, exc))
 
     def delete(self):
         if path_exists(self.full_path):

@@ -6,11 +6,13 @@ from unittest import TestCase
 from uuid import uuid4
 
 from notmany.store.file import Store, Bucket, DEFAULT_DIR_NAME
-from notmany.store.base import StoreSetupError, Interval
+from notmany.store.base import StoreSetupError, Interval, RecordFew
 
 # TODO Add prevention form running this test as root as this will invalidate the test
 # and can be done easily by mistake
 from tests.utils import dt, temporary_directory, file_content
+
+
 
 
 class FileBucketTestCase(TestCase):
@@ -88,9 +90,9 @@ class FileBucketTestCase(TestCase):
             self.assertFalse(os.path.exists(buck.full_path))
             buck.append(123456, 'cpu:7,some:8.4')
             buck.append(123457, 'cpu:8,some:8.4')
-            self.assertEqual([
-                '123456 cpu:7,some:8.4',
-                '123457 cpu:8,some:8.4',
+            self.assertListEqual([
+                RecordFew('123456 cpu:7,some:8.4'),
+                RecordFew('123457 cpu:8,some:8.4'),
             ], list(buck))
             self.assertEqual('123456 cpu:7,some:8.4\n123457 cpu:8,some:8.4\n', file_content(buck.full_path))
             buck.delete()

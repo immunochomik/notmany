@@ -76,6 +76,24 @@ class RecordFewTestCase(TestCase):
         with self.assertRaises(ValueError):
             RecordFew('1234535.0 safd:dsfd,aadf')
 
+    def test_eq_comparison(self):
+        self.assertEqual(
+            RecordFew('1234535.0 foo:1,bar:2.4'),
+            RecordFew('1234535.0 foo:1,bar:2.4')
+        )
+
+    def test_gt_comparison(self):
+        self.assertGreater(
+            RecordFew('1234535.1 foo:1,bar:2.4'),
+            RecordFew('1234535.0 foo:1,bar:2.4')
+        )
+
+    def test_lt_comparison(self):
+        self.assertLess(
+            RecordFew('1234535.0 foo:1,bar:2.4'),
+            RecordFew('1234535.5 foo:1,bar:2.4')
+        )
+
 
 class BaseStoreGetBucketTestCase(TestCase):
     
