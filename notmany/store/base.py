@@ -19,7 +19,7 @@ __all__ = [
 BUCKET_SIZE = 3600
 SEC_IN_DAY = 3600 * 24
 
-FORMAT = "%Y-%m-%d %H:%M:%S"
+FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 def dt(date):
     return datetime.strptime(date, FORMAT)
@@ -56,8 +56,12 @@ def stamp(date):
 def get_datetime(timestamp):
     if type(timestamp) in [int, float]:
         return datetime.fromtimestamp(timestamp)
+
     if isinstance(timestamp, str):
-        return datetime.strptime(timestamp, FORMAT)
+        # deal with optional milliseconds
+        _format = FORMAT + '.%f' if '.' in timestamp else FORMAT
+        return datetime.strptime(timestamp, _format)
+
     return timestamp
 
 

@@ -5,15 +5,11 @@ verify_ssl = true
 name = "pypi"
 
 
-[dev-packages]
-
-
-
 [packages]
 
+tornado = "*"
 six = "*"
 
 
-[requires]
+[dev-packages]
 
-python_version = "2.7"

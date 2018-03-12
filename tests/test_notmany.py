@@ -47,7 +47,7 @@ class SavingMetricsWeeksTestCase(TestCase):
 
     def test_foo(self):
         store = Store(directory='store', bucket_size=600)
-        #self.save_days_of_metric(store=store, days=21)
+        self.save_days_of_metric(store=store, days=21)
         start = time()
         delta = seconds(3600 * 24)
         records = list(store.retrieve(name='temp', interval=Interval(
@@ -62,8 +62,6 @@ class SavingMetricsWeeksTestCase(TestCase):
         print('Sorting took {}'.format(time() - start))
 
 
-    def test_test_sparce_data_with_empty_buckets(self):
-        self.fail()
 
 
 

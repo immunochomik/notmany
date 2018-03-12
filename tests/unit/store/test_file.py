@@ -6,7 +6,7 @@ from unittest import TestCase
 from uuid import uuid4
 
 from notmany.store.file import Store, Bucket, DEFAULT_DIR_NAME
-from notmany.store.base import StoreSetupError, Interval, RecordFew
+from notmany.store.base import StoreSetupError, Interval
 
 # TODO Add prevention form running this test as root as this will invalidate the test
 # and can be done easily by mistake
@@ -18,7 +18,7 @@ from tests.utils import dt, temporary_directory, file_content
 class FileBucketTestCase(TestCase):
     def setUp(self):
         self.name = 'some'
-        self.start = dt('2018-03-03 12:30:00')
+        self.start = dt('2018-03-03T12:30:00')
 
     def make_buck(self, base=None):
         if not base:
@@ -66,9 +66,9 @@ class FileBucketTestCase(TestCase):
             buck.append(123457, 'cpu:8,some:8.4')
             buck.append(123456, 'cpu:8,some:8.4')
             self.assertEqual([
-                RecordFew('123456 cpu:7,some:8.4'),
-                RecordFew('123457 cpu:8,some:8.4'),
-                RecordFew('123456 cpu:8,some:8.4'),
+                (123456, 'cpu:7,some:8.4'),
+                (123457, 'cpu:8,some:8.4'),
+                (123456, 'cpu:8,some:8.4'),
             ], list(buck.read()))
         self.assertFalse(os.path.exists(buck.full_path))
 
@@ -79,8 +79,8 @@ class FileBucketTestCase(TestCase):
             buck.append(123456, 'cpu:7,some:8.4')
             buck.append(123457, 'cpu:8,some:8.4')
             self.assertEqual([
-                RecordFew('123456 cpu:7,some:8.4'),
-                RecordFew('123457 cpu:8,some:8.4'),
+                (123456, 'cpu:7,some:8.4'),
+                (123457, 'cpu:8,some:8.4'),
             ], list(buck))
         self.assertFalse(os.path.exists(buck.full_path))
 
@@ -92,8 +92,8 @@ class FileBucketTestCase(TestCase):
             buck.append(123456, 'cpu:7,some:8.4')
             buck.append(123457, 'cpu:8,some:8.4')
             self.assertListEqual([
-                RecordFew('123456 cpu:7,some:8.4'),
-                RecordFew('123457 cpu:8,some:8.4'),
+                (123456.0, 'cpu:7,some:8.4'),
+                (123457.0, 'cpu:8,some:8.4'),
             ], list(buck))
             self.assertEqual('123456 cpu:7,some:8.4\n123457 cpu:8,some:8.4\n', file_content(buck.full_path))
             buck.delete()
@@ -104,18 +104,18 @@ class FileBucketTestCase(TestCase):
         dire = os.path.join(base, 'some', '420', '2018_03_02')
         path = os.path.join(dire, '12_30_00')
         bucket = Bucket.create(base=base, file_path=path)
-        self.assertEquals(bucket.name, 'some')
-        self.assertEquals(bucket.length, 420)
-        self.assertEquals(bucket.start, datetime(2018, 3, 2, 12, 30))
-        self.assertEquals(bucket.dir, dire)
-        self.assertEquals(bucket.file_name, '12_30_00')
-        self.assertEquals(bucket.full_path, path)
+        self.assertEqual(bucket.name, 'some')
+        self.assertEqual(bucket.length, 420)
+        self.assertEqual(bucket.start, datetime(2018, 3, 2, 12, 30))
+        self.assertEqual(bucket.dir, dire)
+        self.assertEqual(bucket.file_name, '12_30_00')
+        self.assertEqual(bucket.full_path, path)
 
 
 class FileStoreTestCase(TestCase):
     def setUp(self):
         self.name = 'some'
-        self.start = dt('2018-03-03 12:30:00')
+        self.start = dt('2018-03-03T12:30:00')
 
     def test_init_with_invalid_directory_check_rises(self):
         with self.assertRaises(StoreSetupError) as cont:
@@ -141,7 +141,7 @@ class FileStoreTestCase(TestCase):
     def test_get_bucket_not_existing_check_return_and_not_created(self):
         with temporary_directory() as tem_dir:
             store = Store(directory=tem_dir, bucket_size=600)
-            buck = store._get_bucket('some', dt('2017-03-03 10:25:11'))
+            buck = store._get_bucket('some', dt('2017-03-03T10:25:11'))
             self.assertFalse(os.path.exists(buck.full_path))
 
     def test_forget_interval_including_all_check_namespace_deleted(self):
@@ -181,6 +181,9 @@ class FileStoreTestCase(TestCase):
 
             self.assertTrue(os.path.exists(base))
 
+    def test_test_sparce_data_with_empty_buckets(self):
+        self.fail()
+
     def test_get_all_check_all(self):
         self.fail()
 
@@ -195,17 +198,17 @@ class FileStoreTestCase(TestCase):
 
             self.assertEqual(len(records), 11)
             self.assertListEqual([
-                RecordFew('1520080200.0 pending:0'),
-                RecordFew('1520083800.0 pending:1'),
-                RecordFew('1520087400.0 pending:2'),
-                RecordFew('1520091000.0 pending:3'),
-                RecordFew('1520094600.0 pending:4'),
-                RecordFew('1520098200.0 pending:5'),
-                RecordFew('1520101800.0 pending:6'),
-                RecordFew('1520105400.0 pending:7'),
-                RecordFew('1520109000.0 pending:8'),
-                RecordFew('1520112600.0 pending:9'),
-                RecordFew('1520116200.0 pending:10')
+                (1520080200.0, 'pending:0'),
+                (1520083800.0, 'pending:1'),
+                (1520087400.0, 'pending:2'),
+                (1520091000.0, 'pending:3'),
+                (1520094600.0, 'pending:4'),
+                (1520098200.0, 'pending:5'),
+                (1520101800.0, 'pending:6'),
+                (1520105400.0, 'pending:7'),
+                (1520109000.0, 'pending:8'),
+                (1520112600.0, 'pending:9'),
+                (1520116200.0, 'pending:10')
             ], records)
 
 
@@ -239,7 +242,7 @@ class FileStoreTestCase(TestCase):
 
     def test_get_bucket_check_name(self):
         store = Store(bucket_size=24 * 3600)
-        bucket = store._get_bucket('some_name', dt('2018-03-03 00:00:00'))
+        bucket = store._get_bucket('some_name', dt('2018-03-03T00:00:00'))
         self.assertEqual(bucket.name, 'some_name')
 
     def make_three_buckets(self, tem_dir):
