@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 # bucket size in seconds
-BUCKET_SIZE = 3600
+BUCKET_SIZE = 600
 SEC_IN_DAY = 3600 * 24
 
 FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -199,8 +199,8 @@ class BucketBase(object):
     __slots__ = ['name', 'start', 'length']
 
     def __init__(self, name, start, length):
-        assert isinstance(start, datetime), 'Start is datetime'
-        assert isinstance(length, int), 'Length is int'
+        assert isinstance(start, datetime), 'Start has to be a datetime'
+        assert isinstance(length, int), 'Length has to be a int'
         self.name = name
         self.start = start
         self.length = length

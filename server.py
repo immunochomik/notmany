@@ -1,14 +1,15 @@
+from datetime import timedelta
 
 import tornado.web
 import tornado.ioloop
 
-from notmany.store.base import dt, get_datetime, Interval
-from notmany.core import retrieve, record
+from notmany.store.base import get_datetime, Interval
 
-# TODO proper input validation
-from notmany.store.file import Store
+# TODO proper input validation, and enforce max delta
+from notmany.store.file import Store, MAX_DELTA
 
-store = Store(directory='tests/store')
+store = Store(directory='tests/store', bucket_size=600)
+
 
 class MetricHandler(tornado.web.RequestHandler):
     def get(self, metric):
@@ -16,12 +17,18 @@ class MetricHandler(tornado.web.RequestHandler):
         start = get_datetime(self.get_query_argument(name='start'))
         delta = self.get_query_argument(name='delta', default=None)
         end = self.get_query_argument(name='end', default=None)
-        if not delta and not end:
+
+        if delta is not None:
+            delta = min(int(delta), MAX_DELTA)
+            delta = timedelta(seconds=int(delta))
+        elif not end:
             raise tornado.web.MissingArgumentError('You have to define delta or end')
 
         interval = Interval(start=start, end=end, delta=delta)
-        gen = Store.retrieve_raw(name=metric, interval=interval)
-        self.write(gen)
+
+        for chunk in store.retrieve_raw(name=metric, interval=interval):
+            self.write(chunk=chunk)
+        self.finish()
 
     def post(self, metric):
         ts = get_datetime(self.get_body_argument("timestamp"))

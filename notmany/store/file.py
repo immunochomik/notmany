@@ -12,6 +12,7 @@ from .base import StoreBase, BucketBase, StoreSetupError
 
 DEFAULT_DIR_NAME = 'notmany_store'
 CHUNK_SIZE = 65536
+MAX_DELTA = 86400 * 7
 
 # petty optimisations
 path_exists = os.path.exists
