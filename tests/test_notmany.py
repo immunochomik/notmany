@@ -1,4 +1,5 @@
 from datetime import datetime
+from random import choice
 from unittest import TestCase
 from time import time
 
@@ -25,13 +26,17 @@ class SavingMetricsBaseTestCase(TestCase):
 class SavingMetricsWeeksTestCase(TestCase):
 
     def setUp(self):
-        self.start = dt('2018-03-03 12:30:00')
+        self.start = dt('2018-03-03T12:30:00')
 
     def save_days_of_metric(self, store, days):
+        cpu, mem = 10, 4400
         start = time()
         count = 3600 * 24 * days
         for i in range(count):
-            store.record('temp', timestamp=self.start + seconds(i), data='room:1')
+            steps = [-2, -1, 0, 1, 2]
+            cpu += choice(steps)
+            mem += choice(steps)
+            store.record('temp', timestamp=self.start + seconds(i), data='cpu:{},mem:{}'.format(cpu, mem))
         print('Saving records {} took {} bucket size {}'.format(count, time() - start, store.bucket_size))
 
     def retrieve(self, store):
@@ -47,11 +52,11 @@ class SavingMetricsWeeksTestCase(TestCase):
 
     def test_foo(self):
         store = Store(directory='store', bucket_size=600)
-        self.save_days_of_metric(store=store, days=21)
+        self.save_days_of_metric(store=store, days=7)
         start = time()
         delta = seconds(3600 * 24)
         records = list(store.retrieve(name='temp', interval=Interval(
-            start=dt('2018-03-03 12:30:00'),
+            start=dt('2018-03-03T12:30:00'),
             delta=seconds(3600 * 24 * 21)
         )))
 

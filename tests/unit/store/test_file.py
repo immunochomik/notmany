@@ -72,6 +72,36 @@ class FileBucketTestCase(TestCase):
             ], list(buck.read()))
         self.assertFalse(os.path.exists(buck.full_path))
 
+    def test_read_raw_with_file_existing_check_return_value(self):
+        with temporary_directory() as temp_dir:
+            buck, _ = self.make_buck(base=temp_dir)
+            self.assertFalse(os.path.exists(buck.full_path))
+            buck.append(123456, 'cpu:7,some:8.4')
+            buck.append(123457, 'cpu:8,some:8.4')
+            buck.append(123456, 'cpu:8,some:8.4')
+            self.assertEqual([
+                '123456 cpu:7,some:8.4\n123457 cpu:8,some:8.4\n123456 cpu:8,some:8.4\n',
+            ], list(buck.raw()))
+        self.assertFalse(os.path.exists(buck.full_path))
+
+    def test_read_raw_size_10_with_file_existing_check_return_value(self):
+        with temporary_directory() as temp_dir:
+            buck, _ = self.make_buck(base=temp_dir)
+            self.assertFalse(os.path.exists(buck.full_path))
+            buck.append(123456, 'cpu:7,some:8.4')
+            buck.append(123457, 'cpu:8,some:8.4')
+            buck.append(123456, 'cpu:8,some:8.4')
+            self.assertEqual([
+                '123456 cpu',
+                ':7,some:8.',
+                '4\n123457 c',
+                'pu:8,some:',
+                '8.4\n123456',
+                ' cpu:8,som',
+                'e:8.4\n'
+            ], list(buck.raw(size=10)))
+        self.assertFalse(os.path.exists(buck.full_path))
+
     def test_bucket_iteration(self):
         with temporary_directory() as temp_dir:
             buck, _ = self.make_buck(base=temp_dir)
@@ -83,7 +113,6 @@ class FileBucketTestCase(TestCase):
                 (123457, 'cpu:8,some:8.4'),
             ], list(buck))
         self.assertFalse(os.path.exists(buck.full_path))
-
 
     def test_delete_check_deleted(self):
         with temporary_directory() as temp_dir:
@@ -181,7 +210,7 @@ class FileStoreTestCase(TestCase):
 
             self.assertTrue(os.path.exists(base))
 
-    def test_test_sparce_data_with_empty_buckets(self):
+    def test_test_sparse_data_with_empty_buckets(self):
         self.fail()
 
     def test_get_all_check_all(self):
@@ -211,6 +240,31 @@ class FileStoreTestCase(TestCase):
                 (1520116200.0, 'pending:10')
             ], records)
 
+
+    def test_retrieve_raw_with_interval_check_all_data_points_retrieved(self):
+
+        with temporary_directory() as tem_dir:
+            store = Store(directory=tem_dir, bucket_size=600)
+            for i in range(20):
+                store.record(name='foo', timestamp=self.start + timedelta(minutes=60 * i), data='pending:' + str(i))
+                store.record(name='foo', timestamp=self.start + timedelta(minutes=60 * i), data='pending:' + str(i))
+
+            records = list(store.retrieve_raw('foo', interval=Interval(start=self.start, delta=timedelta(hours=10))))
+
+            self.assertEqual(len(records), 11)
+            self.assertListEqual([
+                '1520080200.0 pending:0\n1520080200.0 pending:0\n',
+                '1520083800.0 pending:1\n1520083800.0 pending:1\n',
+                '1520087400.0 pending:2\n1520087400.0 pending:2\n',
+                '1520091000.0 pending:3\n1520091000.0 pending:3\n',
+                '1520094600.0 pending:4\n1520094600.0 pending:4\n',
+                '1520098200.0 pending:5\n1520098200.0 pending:5\n',
+                '1520101800.0 pending:6\n1520101800.0 pending:6\n',
+                '1520105400.0 pending:7\n1520105400.0 pending:7\n',
+                '1520109000.0 pending:8\n1520109000.0 pending:8\n',
+                '1520112600.0 pending:9\n1520112600.0 pending:9\n',
+                '1520116200.0 pending:10\n1520116200.0 pending:10\n'
+            ], records)
 
     def test_record_metric_with_no_buckets_check_buckets_created(self):
         with temporary_directory() as tem_dir:

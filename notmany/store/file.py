@@ -1,6 +1,7 @@
 
 import os
 from datetime import datetime
+from functools import partial
 from tempfile import gettempdir
 
 import shutil
@@ -10,6 +11,7 @@ import errno
 from .base import StoreBase, BucketBase, StoreSetupError
 
 DEFAULT_DIR_NAME = 'notmany_store'
+CHUNK_SIZE = 65536
 
 # petty optimisations
 path_exists = os.path.exists
@@ -82,17 +84,14 @@ class Store(StoreBase):
             for item in bucket:
                 yield item
 
-    def retrieve_stored(self, name, interval=None):
-        buckets = self._get_buckets(name=name, interval=interval)
-
-        for directory in set([bucket.dir for bucket in buckets]):
-            for item in os.walk(directory):
-                print(item)
+    def retrieve_raw(self, name, interval=None):
+        for bucket in self._get_buckets(name=name, interval=interval):
+            for item in bucket.raw():
+                yield item
 
 
 class Bucket(BucketBase):
     __slots__ = ['dir', 'file_name']
-
 
     def __init__(self, name, start, length, base):
         BucketBase.__init__(self, name=name, start=start, length=length)
@@ -118,6 +117,12 @@ class Bucket(BucketBase):
                     except (ValueError, IndexError) as exc:
                         print('Broken line {} {}'.format(line, exc))
 
+    def raw(self, size=CHUNK_SIZE):
+        if path_exists(self.full_path):
+            with open(self.full_path, 'r') as fp:
+                for chunk in iter(partial(fp.read, size), ''):
+                    yield chunk
+
     @staticmethod
     def line_to_record(line):
         line = line.rstrip()
@@ -142,4 +147,3 @@ class Bucket(BucketBase):
         start = datetime.strptime('{} {}'.format(el[2], el[3]), '%Y_%m_%d %H_%M_%S')
 
         return Bucket(name=el[0], start=start, length=int(el[1]), base=base)
-
