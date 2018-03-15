@@ -9,6 +9,9 @@ name = "pypi"
 
 tornado = "*"
 six = "*"
+bkcharts = "*"
+bokeh = "==0.12.7"
+pandas = "*"
 
 
 [dev-packages]

@@ -69,6 +69,19 @@ def naive_tstamp(dt):
     return (dt - datetime(1970, 1, 1)).total_seconds()
 
 
+def record_to_data(record):
+    """
+
+    :param record: 'cpu:7.5,foo:8'
+    :return:
+    """
+    data = {}
+    for pair in record.split(','):
+        elem = pair.split(':')
+        data[elem[0]] = float(elem[1])
+    return data
+
+
 class StoreSetupError(Exception):
     pass
 
